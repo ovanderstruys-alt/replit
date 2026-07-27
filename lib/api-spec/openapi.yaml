@@ -3,20 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Habit tracker with proof verification API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: tasks
+    description: Habit/task management
+  - name: completions
+    description: Task completions with proof
+  - name: settings
+    description: User settings
+  - name: summary
+    description: Progress summaries and streaks
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +32,255 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List all tasks
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a new task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get a task by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /completions:
+    get:
+      operationId: listCompletions
+      tags: [completions]
+      summary: List completions, optionally filtered by date
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+          description: Filter by date (YYYY-MM-DD). Defaults to today.
+      responses:
+        "200":
+          description: List of completions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Completion"
+    post:
+      operationId: submitCompletion
+      tags: [completions]
+      summary: Submit proof of task completion for AI verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompletionInput"
+      responses:
+        "201":
+          description: Completion result with AI verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Completion"
+        "400":
+          description: Verification failed or invalid input
+
+  /completions/{id}:
+    get:
+      operationId: getCompletion
+      tags: [completions]
+      summary: Get a completion by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Completion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Completion"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteCompletion
+      tags: [completions]
+      summary: Delete a completion (uncheck a task)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get user settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update user settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /daily-summary:
+    get:
+      operationId: getDailySummary
+      tags: [summary]
+      summary: Get today's full progress summary with task list and completion status
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+          description: Date (YYYY-MM-DD). Defaults to today.
+      responses:
+        "200":
+          description: Daily summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailySummary"
+
+  /history:
+    get:
+      operationId: getHistory
+      tags: [summary]
+      summary: Get past days' summaries for history and streak view
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+          description: Number of past days to return (default 30)
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryDay"
+
+  /streak:
+    get:
+      operationId: getStreak
+      tags: [summary]
+      summary: Get current streak and stats
+      responses:
+        "200":
+          description: Streak info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreakInfo"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +291,196 @@ components:
       required:
         - status
 
+    Task:
+      type: object
+      required: [id, name, points, recurrence, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        emoji:
+          type: ["string", "null"]
+        points:
+          type: integer
+        recurrence:
+          type: string
+          enum: [daily, one_off]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+
+    TaskInput:
+      type: object
+      required: [name, points, recurrence]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        emoji:
+          type: string
+        points:
+          type: integer
+          minimum: 1
+        recurrence:
+          type: string
+          enum: [daily, one_off]
+
+    TaskUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: ["string", "null"]
+        emoji:
+          type: ["string", "null"]
+        points:
+          type: integer
+          minimum: 1
+        recurrence:
+          type: string
+          enum: [daily, one_off]
+        isActive:
+          type: boolean
+
+    Completion:
+      type: object
+      required: [id, taskId, taskName, taskPoints, proofType, proofData, verified, pointsAwarded, date, completedAt]
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        taskName:
+          type: string
+        taskPoints:
+          type: integer
+        proofType:
+          type: string
+          enum: [photo, video]
+        proofData:
+          type: string
+          description: Base64 encoded image (or video thumbnail for video proof)
+        verified:
+          type: boolean
+        verificationMessage:
+          type: ["string", "null"]
+        pointsAwarded:
+          type: integer
+        date:
+          type: string
+          description: YYYY-MM-DD
+        completedAt:
+          type: string
+
+    CompletionInput:
+      type: object
+      required: [taskId, proofType, proofData]
+      properties:
+        taskId:
+          type: integer
+        proofType:
+          type: string
+          enum: [photo, video]
+        proofData:
+          type: string
+          description: Base64 encoded image data (for video, send a thumbnail frame)
+        date:
+          type: string
+          description: YYYY-MM-DD (defaults to today)
+
+    Settings:
+      type: object
+      required: [dailyPointGoal]
+      properties:
+        dailyPointGoal:
+          type: integer
+
+    SettingsUpdate:
+      type: object
+      properties:
+        dailyPointGoal:
+          type: integer
+          minimum: 1
+
+    TaskWithCompletion:
+      type: object
+      required: [id, name, points, recurrence, isActive]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        emoji:
+          type: ["string", "null"]
+        points:
+          type: integer
+        recurrence:
+          type: string
+          enum: [daily, one_off]
+        isActive:
+          type: boolean
+        completion:
+          oneOf:
+            - $ref: "#/components/schemas/Completion"
+            - type: "null"
+
+    DailySummary:
+      type: object
+      required: [date, pointsEarned, pointsGoal, goalReached, completedTaskCount, totalTaskCount, tasks]
+      properties:
+        date:
+          type: string
+        pointsEarned:
+          type: integer
+        pointsGoal:
+          type: integer
+        goalReached:
+          type: boolean
+        completedTaskCount:
+          type: integer
+        totalTaskCount:
+          type: integer
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskWithCompletion"
+
+    HistoryDay:
+      type: object
+      required: [date, pointsEarned, pointsGoal, goalReached, completedTaskCount, totalTaskCount]
+      properties:
+        date:
+          type: string
+        pointsEarned:
+          type: integer
+        pointsGoal:
+          type: integer
+        goalReached:
+          type: boolean
+        completedTaskCount:
+          type: integer
+        totalTaskCount:
+          type: integer
+
+    StreakInfo:
+      type: object
+      required: [currentStreak, longestStreak, totalDaysCompleted, totalPointsEarned]
+      properties:
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        totalDaysCompleted:
+          type: integer
+        totalPointsEarned:
+          type: integer
