@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ProofTrack icon: camera body + checkmark badge -->
+<!-- Safe zone: 72x72dp centred in 108x108dp (18dp margin each side) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Camera body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+          M30,46
+          a6,6 0 0 1 6,-6
+          h6
+          l4,-6
+          h16
+          l4,6
+          h6
+          a6,6 0 0 1 6,6
+          v26
+          a6,6 0 0 1 -6,6
+          H36
+          a6,6 0 0 1 -6,-6
+          Z" />
+
+    <!-- Camera lens (hole) — punched out with background colour -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M54,59m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
+
+    <!-- Lens inner highlight -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,59m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0" />
+
+    <!-- Lens centre dot -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M54,59m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+
+    <!-- Viewfinder dot (top-left of camera body) -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M38,53m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0" />
+
+    <!-- Checkmark badge circle (bottom-right) -->
+    <path
+        android:fillColor="#22C55E"
+        android:pathData="M72,73m-10,0a10,10 0 1,0 20,0a10,10 0 1,0 -20,0" />
+
+    <!-- Checkmark tick -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0"
+        android:pathData="M66,73 L70,77 L79,68" />
+
+</vector>

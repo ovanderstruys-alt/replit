@@ -1,0 +1,73 @@
+name: Build ProofTrack APK
+
+# Trigger manually from the GitHub Actions tab (recommended)
+# or automatically when android-wrapper code changes on main.
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: >
+          URL of your deployed ProofTrack app
+          (e.g. https://prooftrack.replit.app/).
+          Leave blank to use the APP_URL repository secret.
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths: ['android-wrapper/**']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Code ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Toolchain ───────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: android-wrapper/package-lock.json
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ── 3. Capacitor deps ──────────────────────────────────────────────────
+      - name: Install Capacitor dependencies
+        working-directory: android-wrapper
+        run: npm ci
+
+      # ── 4. Sync – bakes APP_URL into the Android assets ───────────────────
+      - name: Sync Capacitor with app URL
+        working-directory: android-wrapper
+        env:
+          # workflow_dispatch input takes priority; falls back to repo secret
+          APP_URL: ${{ inputs.app_url || secrets.APP_URL }}
+        run: npx cap sync android
+
+      # ── 5. Build ───────────────────────────────────────────────────────────
+      - name: Make Gradle wrapper executable
+        working-directory: android-wrapper/android
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        working-directory: android-wrapper/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      # ── 6. Publish artifact ────────────────────────────────────────────────
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ProofTrack-debug
+          path: android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

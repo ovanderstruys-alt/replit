@@ -1,3 +1,10 @@
+# Android wrapper — build outputs and local caches (keep android/ project files)
+android-wrapper/node_modules/
+android-wrapper/android/.gradle/
+android-wrapper/android/app/build/
+android-wrapper/android/build/
+android-wrapper/android/local.properties
+
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
 # compiled output

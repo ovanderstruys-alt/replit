@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ProofTrack</string>
+    <string name="title_activity_main">ProofTrack</string>
+    <string name="package_name">com.prooftrack.app</string>
+    <string name="custom_url_scheme">com.prooftrack.app</string>
+</resources>
