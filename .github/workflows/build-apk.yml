@@ -30,8 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: android-wrapper/package-lock.json
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -43,17 +41,21 @@ jobs:
         uses: android-actions/setup-android@v3
 
       # ── 3. Capacitor deps ──────────────────────────────────────────────────
+      # Use `npm install` (not `npm ci`) so it works with or without a
+      # pre-existing lock file and never fails on lock-file drift.
       - name: Install Capacitor dependencies
         working-directory: android-wrapper
-        run: npm ci
+        run: npm install
 
       # ── 4. Sync – bakes APP_URL into the Android assets ───────────────────
+      # Call the binary directly (./node_modules/.bin/cap) instead of via npx
+      # to avoid the "could not determine executable to run" npx resolution bug.
       - name: Sync Capacitor with app URL
         working-directory: android-wrapper
         env:
           # workflow_dispatch input takes priority; falls back to repo secret
           APP_URL: ${{ inputs.app_url || secrets.APP_URL }}
-        run: npx cap sync android
+        run: ./node_modules/.bin/cap sync android
 
       # ── 5. Build ───────────────────────────────────────────────────────────
       - name: Make Gradle wrapper executable
