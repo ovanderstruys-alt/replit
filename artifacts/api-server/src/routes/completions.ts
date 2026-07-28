@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, completionsTable, tasksTable } from "@workspace/db";
+import { serializeDates } from "../lib/serialize";
 import {
   SubmitCompletionBody,
   SubmitCompletionResponse,
@@ -26,7 +27,7 @@ router.get("/completions", async (req, res): Promise<void> => {
     .from(completionsTable)
     .where(eq(completionsTable.date, date))
     .orderBy(completionsTable.completedAt);
-  res.json(ListCompletionsResponse.parse(completions));
+  res.json(ListCompletionsResponse.parse(serializeDates(completions)));
 });
 
 router.post("/completions", async (req, res): Promise<void> => {
@@ -79,7 +80,7 @@ router.post("/completions", async (req, res): Promise<void> => {
     })
     .returning();
 
-  res.status(201).json(SubmitCompletionResponse.parse(completion));
+  res.status(201).json(SubmitCompletionResponse.parse(serializeDates(completion)));
 });
 
 router.get("/completions/:id", async (req, res): Promise<void> => {
@@ -96,7 +97,7 @@ router.get("/completions/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Completion not found" });
     return;
   }
-  res.json(GetCompletionResponse.parse(completion));
+  res.json(GetCompletionResponse.parse(serializeDates(completion)));
 });
 
 router.delete("/completions/:id", async (req, res): Promise<void> => {

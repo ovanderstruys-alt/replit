@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { db, tasksTable, completionsTable, settingsTable } from "@workspace/db";
+import { serializeDates } from "../lib/serialize";
 import {
   GetDailySummaryQueryParams,
   GetDailySummaryResponse,
@@ -57,7 +58,7 @@ router.get("/daily-summary", async (req, res): Promise<void> => {
     tasks: tasksWithCompletion,
   };
 
-  res.json(GetDailySummaryResponse.parse(summary));
+  res.json(GetDailySummaryResponse.parse(serializeDates(summary)));
 });
 
 router.get("/history", async (req, res): Promise<void> => {

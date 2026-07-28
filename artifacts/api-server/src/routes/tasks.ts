@@ -12,12 +12,13 @@ import {
   DeleteTaskParams,
   ListTasksResponse,
 } from "@workspace/api-zod";
+import { serializeDates } from "../lib/serialize";
 
 const router: IRouter = Router();
 
 router.get("/tasks", async (_req, res): Promise<void> => {
   const tasks = await db.select().from(tasksTable).orderBy(tasksTable.createdAt);
-  res.json(ListTasksResponse.parse(tasks));
+  res.json(ListTasksResponse.parse(serializeDates(tasks)));
 });
 
 router.post("/tasks", async (req, res): Promise<void> => {
@@ -27,7 +28,7 @@ router.post("/tasks", async (req, res): Promise<void> => {
     return;
   }
   const [task] = await db.insert(tasksTable).values(parsed.data).returning();
-  res.status(201).json(CreateTaskResponse.parse(task));
+  res.status(201).json(CreateTaskResponse.parse(serializeDates(task)));
 });
 
 router.get("/tasks/:id", async (req, res): Promise<void> => {
@@ -41,7 +42,7 @@ router.get("/tasks/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Task not found" });
     return;
   }
-  res.json(GetTaskResponse.parse(task));
+  res.json(GetTaskResponse.parse(serializeDates(task)));
 });
 
 router.patch("/tasks/:id", async (req, res): Promise<void> => {
@@ -64,7 +65,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Task not found" });
     return;
   }
-  res.json(UpdateTaskResponse.parse(task));
+  res.json(UpdateTaskResponse.parse(serializeDates(task)));
 });
 
 router.delete("/tasks/:id", async (req, res): Promise<void> => {
