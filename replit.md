@@ -2,6 +2,16 @@
 
 A habit tracker where every task requires photo or video proof of completion, verified by AI. Tasks earn points, and users set a daily point goal to stay on track.
 
+## Pip's Nest (artifacts/bird-world)
+
+A little 3D island where Pip, an AI-driven bird, walks between a computer, a synth and a 3D printer,
+makes websites / music / prints, places prints around the island, and writes a daily diary.
+
+- `pnpm --filter @workspace/bird-world run dev` — run it (served at `/bird/`; dev proxies `/api` to `API_URL`, default http://localhost:8080)
+- Brain: `POST /api/bird/think` → `artifacts/api-server/src/lib/birdBrain.ts` (gpt-4o-mini, JSON mode). If the API is unreachable, the front end falls back to an offline procedural brain (`src/brain.ts`), so it always runs.
+- `src/world.ts` — three.js scene, bird animation, stations; `src/prints.ts` — print recipe → geometry; `src/music.ts` — Web Audio sequencer; `src/main.ts` — Pip's life loop + diary/things UI
+- Diary and creations are saved in the browser's localStorage (key `pips-nest-v1`)
+
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)

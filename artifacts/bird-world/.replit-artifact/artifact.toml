@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/bird/"
+title = "Pip's Nest"
+version = "1.0.0"
+id = "artifacts/bird-world"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/bird/" ]
+localPort = 20420
+
+[services.development]
+run = "pnpm --filter @workspace/bird-world run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bird-world", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bird-world/dist/public"
+
+[[services.production.rewrites]]
+from = "/bird/*"
+to = "/bird/index.html"
+
+[services.env]
+PORT = "20420"
+BASE_PATH = "/bird/"

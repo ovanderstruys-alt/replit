@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pip's Nest</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="stage">
+        <canvas id="scene"></canvas>
+        <div id="bubble" class="bubble"></div>
+        <header class="hud">
+          <div class="brand">🐦 Pip's Nest <span id="clock"></span></div>
+          <div id="status" class="status">Waking up…</div>
+        </header>
+        <div class="controls">
+          <div class="seg">
+            <button data-speed="0" title="Pause">⏸</button>
+            <button data-speed="1" class="active">1×</button>
+            <button data-speed="2">2×</button>
+            <button data-speed="4">4×</button>
+          </div>
+          <button id="make-now" class="btn primary">✨ Make something now</button>
+          <button id="sound" class="btn">🔇 Sound off</button>
+        </div>
+        <p class="hint">Drag to look around · scroll to zoom · click Pip's prints</p>
+      </section>
+
+      <aside class="panel">
+        <nav class="tabs">
+          <button data-tab="diary" class="active">📔 Diary</button>
+          <button data-tab="things">🗃️ Things <span id="count" class="badge">0</span></button>
+        </nav>
+
+        <section id="diary" class="tab">
+          <div class="diary-head">
+            <button id="diary-prev" class="btn small" aria-label="Previous day">‹</button>
+            <div>
+              <h2 id="diary-date"></h2>
+              <small id="diary-summary"></small>
+            </div>
+            <button id="diary-next" class="btn small" aria-label="Next day">›</button>
+          </div>
+          <div id="diary-entries" class="page"></div>
+        </section>
+
+        <section id="things" class="tab" hidden>
+          <div class="filters">
+            <button data-filter="all" class="chip active">All</button>
+            <button data-filter="website" class="chip">🌐 Websites</button>
+            <button data-filter="music" class="chip">🎵 Music</button>
+            <button data-filter="print" class="chip">🧊 Prints</button>
+          </div>
+          <div id="things-list"></div>
+        </section>
+
+        <footer class="settings">
+          <label>Rest between projects <input id="rest" type="range" min="5" max="120" value="20" /> <span id="rest-label">20s</span></label>
+          <button id="reset" class="btn small danger">Start over</button>
+        </footer>
+      </aside>
+    </main>
+
+    <dialog id="site-dialog">
+      <div class="dialog-bar">
+        <span>🌐 <strong id="site-title"></strong> <small>— made by Pip</small></span>
+        <button id="site-close" class="btn small">Close</button>
+      </div>
+      <iframe id="site-frame" sandbox="allow-scripts" title="Pip's website"></iframe>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
