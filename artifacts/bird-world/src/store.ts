@@ -21,10 +21,17 @@ export function load(): SaveState {
 }
 
 export function save(s: SaveState): void {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(s));
-  } catch {
-    /* storage full or blocked: keep running in memory */
+  // Photos are the big part of a save. If the browser runs out of room, drop the oldest
+  // photos (the scrapbook re-takes them when it shows that page) and try again.
+  for (let attempt = 0; attempt < 50; attempt++) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(s));
+      return;
+    } catch {
+      const oldest = s.items.find((i) => i.photo);
+      if (!oldest) return; // blocked storage: keep running in memory
+      delete oldest.photo;
+    }
   }
 }
 

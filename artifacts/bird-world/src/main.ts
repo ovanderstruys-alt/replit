@@ -18,6 +18,10 @@ let soundOn = false;
 let restSeconds = 20;
 let wakeEarly: (() => void) | null = null;
 let viewDate = today(); // which diary page is open
+let perPage = 2; // scrapbook photos per page (1 when the book is short, e.g. iPad portrait)
+let page = 0; // journal page; 0 = title page
+let flipping = false;
+let journalOpen = false;
 let generation = 0; // bumps on reset so an in-flight life loop stops cleanly
 
 // ---------------------------------------------------------------------------
@@ -30,7 +34,7 @@ if (lastSite) world.drawScreen(lastSite.title);
 function persist() {
   save(state);
   renderDiary();
-  renderThings();
+  renderJournal();
 }
 
 function writeDiary(text: string, itemId?: string) {
@@ -88,6 +92,7 @@ async function makeSomething(gen: number) {
     id: Math.random().toString(36).slice(2, 10),
     kind: creation.action,
     title: creation.title,
+    caption: creation.caption,
     createdAt: Date.now(),
     byAI,
     html: creation.website?.html,
@@ -111,6 +116,24 @@ async function makeSomething(gen: number) {
   writeDiary(creation.diary, item.id);
 }
 
+/** Pip poses (turns to the camera, or steps beside a print) and snaps a photo for the scrapbook. */
+async function takePhoto(item: Item) {
+  const plan = world.photoPlan(item);
+  if (plan.stand) await world.bird.walkTo(plan.stand);
+  world.bird.faceTowards(plan.from);
+  say("📸 Say cheese!", 1.5);
+  await world.wait(0.7);
+  try {
+    item.photo = world.photoOf(item);
+  } catch {
+    /* no photo this time; the scrapbook re-takes it later */
+  }
+  const flash = $("#flash");
+  flash.classList.remove("go");
+  void flash.offsetWidth; // restart the CSS animation
+  flash.classList.add("go");
+}
+
 async function work(item: Item, creation: Creation, gen: number) {
   const bird = world.bird;
   if (item.kind === "website") {
@@ -124,6 +147,7 @@ async function work(item: Item, creation: Creation, gen: number) {
     }
     world.drawScreen(item.title);
     bird.mode = "idle";
+    await takePhoto(item);
     state.items.push(item);
     persist();
     say(`Done! "${item.title}" is live 🌐`, 4);
@@ -136,9 +160,13 @@ async function work(item: Item, creation: Creation, gen: number) {
       world.spawnNote();
       await world.wait(0.5);
     }
+    bird.mode = "dance";
+    world.spawnNote();
+    world.spawnNote();
+    await world.wait(0.5);
+    await takePhoto(item);
     state.items.push(item);
     persist();
-    bird.mode = "dance";
     say(`🎶 "${item.title}"`, 6);
     if (soundOn) {
       await music.play(item.music!, (i) => i % 2 === 0 && world.spawnNote());
@@ -172,10 +200,12 @@ async function work(item: Item, creation: Creation, gen: number) {
     if (gen !== generation) return;
     bird.faceTowards(spot);
     world.placePrint(item, obj);
+    say("Perfect spot ✨", 2);
+    await world.wait(1);
+    await takePhoto(item);
     state.items.push(item);
     persist();
-    say("Perfect spot ✨", 2.5);
-    await world.wait(1.5);
+    await world.wait(1);
   }
 }
 
@@ -243,34 +273,176 @@ $("#diary-next").onclick = () => {
 };
 
 // ---------------------------------------------------------------------------
-// Side panel: things Pip made
+// Side panel: Pip's scrapbook journal
 // ---------------------------------------------------------------------------
-let filter: Kind | "all" = "all";
 const icon = (k: Kind) => ({ website: "🌐", music: "🎵", print: "🧊" })[k];
+const verb = (k: Kind) => ({ website: "Visit", music: "Play", print: "Find it" })[k];
 
-function renderThings() {
-  const list = [...state.items].reverse().filter((i) => filter === "all" || i.kind === filter);
-  $("#count").textContent = String(state.items.length);
-  $("#things-list").innerHTML =
-    list
-      .map(
-        (i) => `<article class="thing" data-kind="${i.kind}">
-      <div class="thing-icon">${icon(i.kind)}</div>
-      <div class="thing-body"><strong>${esc(i.title)}</strong>
-        <small>${new Date(i.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}${i.byAI ? " · AI" : ""}</small></div>
-      <button class="btn small" data-open="${i.id}">${i.kind === "website" ? "Visit" : i.kind === "music" ? "Play" : "Find"}</button>
-    </article>`,
-      )
-      .join("") || `<p class="empty">Nothing yet — Pip is just getting started.</p>`;
+function pageCount() {
+  return 1 + Math.ceil(state.items.length / perPage);
 }
 
-document.querySelectorAll<HTMLButtonElement>("[data-filter]").forEach((b) => {
-  b.onclick = () => {
-    filter = b.dataset.filter as Kind | "all";
-    document.querySelectorAll("[data-filter]").forEach((x) => x.classList.toggle("active", x === b));
-    renderThings();
-  };
+/** Fit 1 or 2 photos per page depending on how tall the book is. */
+function fitPerPage() {
+  const h = $("#book").clientHeight;
+  if (!h) return; // journal hidden
+  const next = h >= 470 ? 2 : 1;
+  if (next === perPage) return;
+  const firstItem = page > 0 ? (page - 1) * perPage : -1; // keep the same photo in view
+  perPage = next;
+  page = firstItem < 0 ? 0 : 1 + Math.floor(firstItem / perPage);
+  if (journalOpen && !flipping) $("#page").innerHTML = pageHtml(page);
+  renderPager();
+}
+window.addEventListener("resize", fitPerPage);
+
+/** Small stable number from an id, for each scrap's tilt and tape colour. */
+function hash(id: string) {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return Math.abs(h);
+}
+
+/** Older items (or ones from before photos existed) get their photo taken now. */
+function ensurePhoto(item: Item) {
+  if (item.photo) return;
+  try {
+    item.photo = world.photoOf(item);
+    save(state);
+  } catch {
+    /* draw the placeholder instead */
+  }
+}
+
+function captionFor(item: Item) {
+  return item.caption || state.diary.find((d) => d.itemId === item.id)?.text || "Something I made!";
+}
+
+function titlePageHtml() {
+  const n = (k: Kind) => state.items.filter((i) => i.kind === k).length;
+  const first = state.diary[0]?.date ?? today();
+  const since = new Date(first + "T12:00:00").toLocaleDateString(undefined, { month: "long", day: "numeric" });
+  return `<div class="title-page">
+    <div class="stamp">🐦</div>
+    <h2>Pip's Scrapbook</h2>
+    <p class="hand">Things I made, with photos!</p>
+    <p class="since">started ${esc(since)}</p>
+    <ul class="tally">
+      <li>🌐 ${n("website")} website${n("website") === 1 ? "" : "s"}</li>
+      <li>🎵 ${n("music")} song${n("music") === 1 ? "" : "s"}</li>
+      <li>🧊 ${n("print")} print${n("print") === 1 ? "" : "s"}</li>
+    </ul>
+    <p class="hand turn">${state.items.length ? "turn the page →" : "nothing yet… I'm about to make my first thing!"}</p>
+  </div>`;
+}
+
+function scrapHtml(item: Item, i: number) {
+  ensurePhoto(item);
+  const h = hash(item.id);
+  const tilt = ((h % 7) - 3) * 1.1 * (i % 2 ? -1 : 1);
+  const tapes = ["#f7c8d0cc", "#bde0fecc", "#cdeac0cc", "#ffe8a3cc", "#d9c6f5cc"];
+  const when = new Date(item.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const photo = item.photo
+    ? `<img src="${item.photo}" alt="Photo of ${esc(item.title)}" loading="lazy" />`
+    : `<div class="no-photo">${icon(item.kind)}</div>`;
+  return `<figure class="scrap ${i % 2 ? "alt" : ""}">
+    <button class="polaroid" data-open="${item.id}" style="--tilt:${tilt}deg" aria-label="${verb(item.kind)} ${esc(item.title)}">
+      <span class="tape" style="--tape:${tapes[h % tapes.length]}"></span>
+      ${photo}
+      <span class="name">${esc(item.title)}</span>
+    </button>
+    <figcaption class="note">
+      <p class="hand">${esc(captionFor(item))}</p>
+      <div class="meta"><span class="sticker">${icon(item.kind)}</span><span>${esc(when)}</span>
+        <button class="link" data-open="${item.id}">${verb(item.kind)} →</button></div>
+    </figcaption>
+  </figure>`;
+}
+
+function pageHtml(p: number) {
+  if (p === 0) return titlePageHtml();
+  const items = state.items.slice((p - 1) * perPage, p * perPage);
+  return `<div class="scraps">${items.map(scrapHtml).join("")}</div><div class="folio">${p}</div>`;
+}
+
+function renderPager() {
+  const total = pageCount();
+  page = Math.min(page, total - 1);
+  $("#count").textContent = String(state.items.length);
+  const pager = $("#pager");
+  pager.hidden = total <= 1;
+  $("#pg-label").textContent = page === 0 ? `Cover · ${total - 1} page${total - 1 === 1 ? "" : "s"}` : `Page ${page} of ${total - 1}`;
+  $<HTMLButtonElement>("#pg-prev").disabled = page <= 0;
+  $<HTMLButtonElement>("#pg-next").disabled = page >= total - 1;
+}
+
+/** Re-draw the current page in place (new creations, reset…). */
+function renderJournal() {
+  renderPager();
+  if (!journalOpen || flipping) return;
+  $("#page").innerHTML = pageHtml(page);
+}
+
+/** Turn the page with a paper-flip animation. */
+function turnTo(next: number) {
+  const total = pageCount();
+  if (flipping || next < 0 || next >= total || next === page) return;
+  const forward = next > page;
+  const pageEl = $("#page");
+  const flip = $("#flip");
+  const oldHtml = pageEl.innerHTML;
+  const newHtml = pageHtml(next);
+  flipping = true;
+  if (forward) {
+    // the current page lifts off the right edge and folds over the spine…
+    flip.innerHTML = oldHtml;
+    pageEl.innerHTML = newHtml;
+  } else {
+    // …or the previous page swings back in from the spine
+    flip.innerHTML = newHtml;
+  }
+  flip.className = `sheet flip ${forward ? "turn-fwd" : "turn-back"}`;
+  page = next;
+  renderPager();
+  flip.addEventListener(
+    "animationend",
+    () => {
+      pageEl.innerHTML = newHtml;
+      flip.className = "sheet flip";
+      flip.innerHTML = "";
+      flipping = false;
+    },
+    { once: true },
+  );
+}
+
+$("#pg-prev").onclick = () => turnTo(page - 1);
+$("#pg-next").onclick = () => turnTo(page + 1);
+$("#journal").addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") turnTo(page - 1);
+  if (e.key === "ArrowRight") turnTo(page + 1);
 });
+// Swipe to turn pages (handy on iPad)
+let swipeX: number | null = null;
+$("#book").addEventListener("pointerdown", (e) => (swipeX = e.clientX));
+$("#book").addEventListener("pointerup", (e) => {
+  if (swipeX === null) return;
+  const dx = e.clientX - swipeX;
+  swipeX = null;
+  if (Math.abs(dx) > 50) turnTo(page + (dx < 0 ? 1 : -1));
+});
+
+/** Opening the journal: the cover swings open to reveal the page. */
+function openBook() {
+  const book = $("#book");
+  journalOpen = true;
+  fitPerPage();
+  $("#page").innerHTML = pageHtml(page);
+  renderPager();
+  book.classList.remove("opening");
+  void book.offsetWidth; // restart the CSS animation every time the tab is opened
+  book.classList.add("opening");
+}
 
 function openItem(id: string) {
   const item = state.items.find((i) => i.id === id);
@@ -318,6 +490,8 @@ document.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((b) => {
   b.onclick = () => {
     document.querySelectorAll("[data-tab]").forEach((x) => x.classList.toggle("active", x === b));
     document.querySelectorAll<HTMLElement>(".tab").forEach((t) => (t.hidden = t.id !== b.dataset.tab));
+    if (b.dataset.tab === "journal") openBook();
+    else journalOpen = false;
   };
 });
 
@@ -349,6 +523,7 @@ $("#reset").onclick = () => {
   clearSave();
   state.items = [];
   state.diary = [];
+  page = 0;
   world.removeAllPrints();
   world.drawScreen("Pip OS", "#2b2d42", "#8ecae6");
   world.bird.mode = "idle";
@@ -381,7 +556,7 @@ function frame(now: number) {
 }
 
 renderDiary();
-renderThings();
+renderJournal();
 setStatus("Waking up…", "busy");
 requestAnimationFrame(frame);
 void life();

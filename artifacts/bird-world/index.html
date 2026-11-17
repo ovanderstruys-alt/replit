@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pip's Nest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   </head>
   <body>
@@ -11,6 +14,7 @@
       <section class="stage">
         <canvas id="scene"></canvas>
         <div id="bubble" class="bubble"></div>
+        <div id="flash" class="flash"></div>
         <header class="hud">
           <div class="brand">🐦 Pip's Nest <span id="clock"></span></div>
           <div id="status" class="status">Waking up…</div>
@@ -31,7 +35,7 @@
       <aside class="panel">
         <nav class="tabs">
           <button data-tab="diary" class="active">📔 Diary</button>
-          <button data-tab="things">🗃️ Things <span id="count" class="badge">0</span></button>
+          <button data-tab="journal">📒 Journal <span id="count" class="badge">0</span></button>
         </nav>
 
         <section id="diary" class="tab">
@@ -46,14 +50,27 @@
           <div id="diary-entries" class="page"></div>
         </section>
 
-        <section id="things" class="tab" hidden>
-          <div class="filters">
-            <button data-filter="all" class="chip active">All</button>
-            <button data-filter="website" class="chip">🌐 Websites</button>
-            <button data-filter="music" class="chip">🎵 Music</button>
-            <button data-filter="print" class="chip">🧊 Prints</button>
+        <section id="journal" class="tab" hidden tabindex="-1">
+          <div id="book" class="book">
+            <div class="pages">
+              <div id="page" class="sheet"></div>
+              <div id="flip" class="sheet flip" aria-hidden="true"></div>
+            </div>
+            <div class="cover" aria-hidden="true">
+              <div class="cover-front">
+                <span class="cover-tape"></span>
+                <span class="cover-bird">🐦</span>
+                <strong>Pip's Scrapbook</strong>
+                <small>private! (but you can look)</small>
+              </div>
+              <div class="cover-back"></div>
+            </div>
           </div>
-          <div id="things-list"></div>
+          <nav id="pager" class="pager" hidden>
+            <button id="pg-prev" class="arrow" aria-label="Previous page">‹</button>
+            <span id="pg-label"></span>
+            <button id="pg-next" class="arrow" aria-label="Next page">›</button>
+          </nav>
         </section>
 
         <footer class="settings">

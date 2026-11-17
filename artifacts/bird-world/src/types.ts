@@ -19,6 +19,8 @@ export interface Creation {
   action: Kind;
   thought: string;
   title: string;
+  /** Pip's scrapbook note about the thing itself. */
+  caption?: string;
   diary: string;
   website?: { html: string };
   music?: MusicData;
@@ -32,6 +34,10 @@ export interface Item {
   title: string;
   createdAt: number;
   byAI: boolean;
+  /** Scrapbook caption written by Pip. */
+  caption?: string;
+  /** Snapshot taken in the 3D world (small JPEG data URL). */
+  photo?: string;
   html?: string;
   music?: MusicData;
   print?: PrintData;

@@ -177,6 +177,8 @@ export class World {
   speed = 1;
   private waits: { at: number; resolve: () => void }[] = [];
   private raycaster = new THREE.Raycaster();
+  private snapCam = new THREE.PerspectiveCamera(42, 4 / 3, 0.1, 200);
+  private photoCanvas = document.createElement("canvas");
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -490,6 +492,71 @@ export class World {
       if (o) return o.userData.itemId as string;
     }
     return null;
+  }
+
+  // --- photos ---------------------------------------------------------------
+  /**
+   * Take a scrapbook photo: render the scene once from a different camera and copy the
+   * pixels in the same tick (so the WebGL canvas doesn't need preserveDrawingBuffer).
+   */
+  snapshot(from: THREE.Vector3, focus: THREE.Vector3): string {
+    const gl = this.renderer.domElement;
+    const w = gl.width;
+    const h = gl.height;
+    this.snapCam.aspect = w / Math.max(1, h);
+    this.snapCam.position.copy(from);
+    this.snapCam.lookAt(focus);
+    this.snapCam.updateProjectionMatrix();
+    this.renderer.render(this.scene, this.snapCam);
+
+    const W = 320;
+    const H = 240;
+    this.photoCanvas.width = W;
+    this.photoCanvas.height = H;
+    const g = this.photoCanvas.getContext("2d")!;
+    // centre-crop to 4:3
+    const srcAspect = w / h;
+    let sw = w;
+    let sh = h;
+    if (srcAspect > W / H) sw = h * (W / H);
+    else sh = w / (W / H);
+    g.drawImage(gl, (w - sw) / 2, (h - sh) / 2, sw, sh, 0, 0, W, H);
+    // a touch of warm "film" tint
+    g.fillStyle = "rgba(255, 200, 140, 0.08)";
+    g.fillRect(0, 0, W, H);
+    this.renderer.render(this.scene, this.camera);
+    return this.photoCanvas.toDataURL("image/jpeg", 0.72);
+  }
+
+  /**
+   * Where the camera goes for an item's photo, what it looks at, and (for prints)
+   * where Pip should stand to pose beside the thing.
+   */
+  photoPlan(item: Item): { from: THREE.Vector3; focus: THREE.Vector3; stand?: THREE.Vector3 } {
+    if (item.kind === "print" && item.pos) {
+      const [x, z] = item.pos;
+      const spot = v3(x, 0, z);
+      const toward = spot.clone().setY(0);
+      if (toward.lengthSq() < 0.01) toward.set(0, 0, 1);
+      toward.normalize();
+      const side = v3(toward.z, 0, -toward.x);
+      const from = spot.clone().sub(toward.clone().multiplyScalar(2.1)).add(side.multiplyScalar(1.3)).add(v3(0, 1.25, 0));
+      const look = spot.clone().sub(from).setY(0).normalize();
+      const perp = v3(look.z, 0, -look.x);
+      const stand = spot.clone().add(perp.clone().multiplyScalar(0.75));
+      return { from, focus: spot.clone().add(perp.multiplyScalar(0.38)).add(v3(0, 0.45, 0)), stand };
+    }
+    const station = item.kind === "website" ? { at: v3(-3.2, 0, -2.2), rot: 0.5 } : { at: v3(3.2, 0, -2.2), rot: -0.5 };
+    const front = v3(Math.sin(station.rot), 0, Math.cos(station.rot));
+    const side = v3(front.z, 0, -front.x);
+    const from = station.at.clone().add(front.multiplyScalar(3.4)).add(side.multiplyScalar(item.kind === "website" ? -1.1 : 1.1)).add(v3(0, 1.9, 0));
+    return { from, focus: station.at.clone().add(v3(0, 0.9, 0.3)) };
+  }
+
+  /** Take an item's scrapbook photo right now. */
+  photoOf(item: Item): string {
+    const plan = this.photoPlan(item);
+    return this.snapshot(plan.from, plan.focus);
   }
 
   // --- time -----------------------------------------------------------------

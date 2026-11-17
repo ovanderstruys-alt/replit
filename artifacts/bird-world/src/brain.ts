@@ -96,6 +96,11 @@ button{background:${accent};color:${bg};border:0;padding:.7em 1.4em;border-radiu
       action: "website",
       thought: pick(["Time to do some web design!", "I have an idea for a website...", "Click clack, beak on keys!"]),
       title: topic.t,
+      caption: pick([
+        `My website about ${topic.h.toLowerCase()}. Press the button, it tweets!`,
+        `I picked these colours myself. The button is my favourite part.`,
+        `A whole page of ${topic.items.length} important facts. You're welcome, internet.`,
+      ]),
       diary: pick([
         `Built a website called "${topic.t}". Typing with a beak is hard but I'm getting faster.`,
         `Made "${topic.t}" on my little computer. I think the colours are very me.`,
@@ -125,6 +130,11 @@ button{background:${accent};color:${bg};border:0;padding:.7em 1.4em;border-radiu
       action: "music",
       thought: pick(["I hear a melody in my head!", "Let's make some noise!", "Beep boop, compose mode."]),
       title,
+      caption: pick([
+        `${melody.filter((n) => n !== "-").length} notes, all hand-picked. Best enjoyed while hopping.`,
+        `A little tune in ${scale[0]}. It sounds like a sunny branch.`,
+        `I wrote this one in code! Play it loud.`,
+      ]),
       diary: pick([
         `Composed "${title}" on the synth. I wrote it as code, one note at a time.`,
         `Made a song called "${title}". I bobbed my head the whole time.`,
@@ -140,6 +150,11 @@ button{background:${accent};color:${bg};border:0;padding:.7em 1.4em;border-radiu
     action: "print",
     thought: pick(["The printer is calling me.", "I'll print something for the island!", "Needs more decorations here..."]),
     title,
+    caption: pick([
+      `Printed layer by layer. It's ${["wobbly", "perfect", "a bit lopsided", "very shiny"][Math.floor(Math.random() * 4)]} and I love it.`,
+      `Lives on my island now. Please do not peck.`,
+      `My printer and I made this together. Teamwork!`,
+    ]),
     diary: pick([
       `3D printed a "${title}" and put it somewhere nice on my island.`,
       `The printer whirred for ages, but now I have a "${title}". The island looks cozier.`,

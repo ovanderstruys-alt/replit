@@ -21,6 +21,7 @@ export interface BirdCreation {
   action: BirdAction;
   thought: string;
   title: string;
+  caption: string;
   diary: string;
   website?: { html: string };
   music?: { bpm: number; wave: string; melody: string[]; bass: string[] };
@@ -42,7 +43,8 @@ Reply with JSON only, matching exactly:
 {
   "action": "website" | "music" | "print",
   "thought": "what you mutter while walking to the station (max 12 words)",
-  "title": "short name of the thing you made",
+  "title": "a cute, specific name for the thing you made (max 5 words)",
+  "caption": "1-2 sentence scrapbook description of the thing itself, in your voice, like a note under a photo",
   "diary": "1-3 sentence first-person diary entry about making it",
   "website": { "html": "complete self-contained HTML document with inline CSS (and optional inline JS), under 3500 characters" },
   "music": { "bpm": 70-160, "wave": "sine"|"square"|"triangle"|"sawtooth",
@@ -68,6 +70,7 @@ export function sanitize(raw: any): BirdCreation {
     action,
     thought: String(raw?.thought ?? "Hmm, what shall I make?").slice(0, 120),
     title: String(raw?.title ?? "Untitled").slice(0, 80),
+    caption: String(raw?.caption ?? "").slice(0, 300),
     diary: String(raw?.diary ?? "I made something today.").slice(0, 600),
   };
   if (action === "website") {
