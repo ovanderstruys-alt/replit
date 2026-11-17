@@ -515,7 +515,19 @@ $("#sound").onclick = () => {
   if (!soundOn) music.stop();
 };
 $("#reset").onclick = () => {
-  if (!confirm("Start Pip's island over? This erases the diary and everything Pip made.")) return;
+  // Ask in the page itself (pop-up dialogs are blocked in some viewers): first tap arms, second tap erases.
+  const btn = $<HTMLButtonElement>("#reset");
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = "1";
+    btn.textContent = "Tap again to erase everything";
+    setTimeout(() => {
+      delete btn.dataset.armed;
+      btn.textContent = "Start over";
+    }, 4000);
+    return;
+  }
+  delete btn.dataset.armed;
+  btn.textContent = "Start over";
   generation++;
   restToken++;
   wakeEarly?.();
